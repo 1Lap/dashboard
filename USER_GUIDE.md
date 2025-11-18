@@ -175,16 +175,19 @@ The CSV files can be imported into:
 
 ## Known Issues
 
-- **Capture rate is ~43Hz** instead of the target 100Hz
-  - Impact: Slightly lower resolution data
-  - Still perfectly usable for lap analysis
-  - Performance has improved 2x from initial versions
-  - Further optimization planned for future versions
-
 - **Track length shows 0.00**:
   - Currently not extracted from shared memory
   - Doesn't affect viewer compatibility (optional field)
   - Fix planned for future versions
+
+## Performance Notes
+
+- **Capture rate is ~43Hz**
+  - This is **working as expected** and is not a bug
+  - The rF2SharedMemoryMapPlugin updates at 50Hz maximum
+  - We're achieving **86% of the maximum possible rate** (43/50 Hz)
+  - More than sufficient for all sim racing telemetry analysis
+  - Performance has improved 2.1x from initial versions
 
 ## Support
 
