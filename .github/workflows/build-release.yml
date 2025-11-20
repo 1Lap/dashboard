@@ -39,14 +39,16 @@ jobs:
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --onefile `
+        pyinstaller --onedir `
           --name "LMU_Telemetry_Logger" `
           --icon=NONE `
           --add-data "src;src" `
           --hidden-import psutil `
           --hidden-import datetime `
+          --hidden-import pystray `
+          --hidden-import PIL `
           --collect-all src `
-          example_app.py
+          tray_app.py
 
     - name: Install Inno Setup
       run: |
@@ -71,8 +73,15 @@ jobs:
       shell: bash
       run: |
         mkdir release
-        cp dist/LMU_Telemetry_Logger.exe release/
+        # Copy the installer (primary distribution method)
         cp installer/output/LMU_Telemetry_Logger_Setup_v1.0.0.exe release/
+
+        # Create a zip of the standalone executable bundle for advanced users
+        cd dist
+        7z a -tzip ../release/LMU_Telemetry_Logger_Standalone.zip LMU_Telemetry_Logger/
+        cd ..
+
+        # Copy documentation
         cp README.md release/
         cp USER_GUIDE.md release/
         cp CHANGELOG.md release/
@@ -112,7 +121,7 @@ jobs:
 
           ### What's included
           - \`LMU_Telemetry_Logger_Setup_v1.0.0.exe\` - **Windows installer (recommended)**
-          - \`LMU_Telemetry_Logger.exe\` - Standalone executable
+          - \`LMU_Telemetry_Logger_Standalone.zip\` - Standalone executable bundle (for advanced users)
           - \`README.md\`, \`USER_GUIDE.md\`, \`CHANGELOG.md\`
           - \`VERSION.txt\` - Build information
 
@@ -166,7 +175,7 @@ jobs:
       with:
         files: |
           installer/output/LMU_Telemetry_Logger_Setup_v1.0.0.exe
-          dist/LMU_Telemetry_Logger.exe
+          release/LMU_Telemetry_Logger_Standalone.zip
           README.md
           USER_GUIDE.md
           CHANGELOG.md
@@ -194,10 +203,11 @@ jobs:
           4. Launch from Start Menu
           5. Access system tray icon for controls
 
-          **Option 2: Standalone Executable**
-          1. Download `LMU_Telemetry_Logger.exe`
-          2. Run the executable directly (no installation required)
-          3. CSV files saved to `./telemetry_output/`
+          **Option 2: Standalone Executable (Advanced)**
+          1. Download `LMU_Telemetry_Logger_Standalone.zip`
+          2. Extract the zip file to a folder of your choice
+          3. Run `LMU_Telemetry_Logger.exe` from the extracted folder
+          4. CSV files saved to `./telemetry_output/`
 
           ### Prerequisites
           1. **Install LMU Runtime Dependencies** (Required!)
