@@ -302,6 +302,21 @@ class RealTelemetryReader(TelemetryReaderInterface):
                     car_name = self.Cbytestring2Python(vehicle_tele.mVehicleName) or \
                                self.Cbytestring2Python(vehicle_scor.mVehicleName)
 
+                    # DEBUG: Log vehicle identification fields for first opponent
+                    # This helps understand what fields contain car model vs team name
+                    # TODO: Remove after investigation complete
+                    if i == 0 and car_name:  # Only log for first opponent to avoid spam
+                        vehicle_class = self.Cbytestring2Python(vehicle_scor.mVehicleClass) if hasattr(vehicle_scor, 'mVehicleClass') else 'N/A'
+                        pit_group = self.Cbytestring2Python(vehicle_scor.mPitGroup) if hasattr(vehicle_scor, 'mPitGroup') else 'N/A'
+                        tele_vehicle = self.Cbytestring2Python(vehicle_tele.mVehicleName) if hasattr(vehicle_tele, 'mVehicleName') else 'N/A'
+                        scor_vehicle = self.Cbytestring2Python(vehicle_scor.mVehicleName) if hasattr(vehicle_scor, 'mVehicleName') else 'N/A'
+                        print(f"\n[DEBUG] Vehicle identification fields for '{driver_name}':")
+                        print(f"  mVehicleName (tele): '{tele_vehicle}'")
+                        print(f"  mVehicleName (scor): '{scor_vehicle}'")
+                        print(f"  mVehicleClass:       '{vehicle_class}'")
+                        print(f"  mPitGroup:           '{pit_group}'")
+                        print(f"  car_name (used):     '{car_name}'\n")
+
                     # Get lap info
                     lap = vehicle_scor.mTotalLaps if vehicle_scor.mTotalLaps > 0 else 1
                     lap_distance = vehicle_scor.mLapDist
