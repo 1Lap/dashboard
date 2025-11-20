@@ -48,11 +48,31 @@ jobs:
           --collect-all src `
           example_app.py
 
+    - name: Install Inno Setup
+      run: |
+        choco install innosetup -y
+        refreshenv
+
+    - name: Build installer with Inno Setup
+      shell: pwsh
+      run: |
+        # Run Inno Setup compiler
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\LMU_Telemetry_Logger_Setup.iss
+
+        # Verify installer was created
+        if (!(Test-Path "installer\output\LMU_Telemetry_Logger_Setup_v1.0.0.exe")) {
+          Write-Error "Installer was not created!"
+          exit 1
+        }
+
+        Write-Output "Installer created successfully!"
+
     - name: Create release package
       shell: bash
       run: |
         mkdir release
         cp dist/LMU_Telemetry_Logger.exe release/
+        cp installer/output/LMU_Telemetry_Logger_Setup_v1.0.0.exe release/
         cp README.md release/
         cp USER_GUIDE.md release/
         cp CHANGELOG.md release/
@@ -83,7 +103,7 @@ jobs:
 
           const comment = `## ✅ Windows Build Complete
 
-          The Windows executable has been built and is ready for testing!
+          The Windows executable and installer have been built and are ready for testing!
 
           ### Download
           📦 [Download **${artifactName}**](https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId})
@@ -91,12 +111,20 @@ jobs:
           Click the link above, scroll down to "Artifacts" section, and download the build.
 
           ### What's included
-          - \`LMU_Telemetry_Logger.exe\` - Windows executable
+          - \`LMU_Telemetry_Logger_Setup_v1.0.0.exe\` - **Windows installer (recommended)**
+          - \`LMU_Telemetry_Logger.exe\` - Standalone executable
           - \`README.md\`, \`USER_GUIDE.md\`, \`CHANGELOG.md\`
           - \`VERSION.txt\` - Build information
 
           ### Testing checklist
-          - [ ] Run executable on Windows
+          **Installer:**
+          - [ ] Run installer on Windows
+          - [ ] Verify Start Menu shortcuts created
+          - [ ] Test custom output directory selection
+          - [ ] Test upgrade scenario (install v1.0.0, then newer version)
+          - [ ] Test uninstall with data preservation options
+
+          **Functionality:**
           - [ ] Complete a player lap - verify no \`mCurrentET\` errors
           - [ ] Join multiplayer session
           - [ ] Wait for opponent to complete a lap
@@ -137,6 +165,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
+          installer/output/LMU_Telemetry_Logger_Setup_v1.0.0.exe
           dist/LMU_Telemetry_Logger.exe
           README.md
           USER_GUIDE.md
@@ -147,33 +176,55 @@ jobs:
           ## LMU Telemetry Logger ${{ github.ref_name }}
 
           ### Features
-          - Automatic telemetry capture from Le Mans Ultimate (player + opponents)
-          - Opponent lap tracking (fastest lap only)
-          - MVP format output (10-channel LMUTelemetry v3)
-          - ~43-50 Hz capture rate (optimal)
-          - File size: ~1 MB per lap
-          - Smart file naming with track, car, driver, lap time
+          - ✅ Automatic telemetry capture from Le Mans Ultimate (player + opponents)
+          - ✅ System tray interface with start/stop/pause controls
+          - ✅ Professional Windows installer with shortcuts
+          - ✅ Opponent lap tracking (fastest lap only)
+          - ✅ MVP format output (12-channel LMUTelemetry v2)
+          - ✅ ~43Hz capture rate (optimal)
+          - ✅ File size: ~1 MB per lap
+          - ✅ Smart file naming with track, car, driver, lap time
 
-          ### Installation
+          ### Installation (Recommended)
+
+          **Option 1: Installer (Easy)**
+          1. Download `LMU_Telemetry_Logger_Setup_v1.0.0.exe`
+          2. Run the installer and follow the wizard
+          3. Choose your telemetry output directory (default: `Documents\LMU Telemetry`)
+          4. Launch from Start Menu
+          5. Access system tray icon for controls
+
+          **Option 2: Standalone Executable**
+          1. Download `LMU_Telemetry_Logger.exe`
+          2. Run the executable directly (no installation required)
+          3. CSV files saved to `./telemetry_output/`
+
+          ### Prerequisites
           1. **Install LMU Runtime Dependencies** (Required!)
             - Navigate to: `LMU/support/runtimes/`
             - Install all runtime installers (especially `vc_redist.x64.exe`)
             - Restart computer (recommended)
-          2. Install https://github.com/TheIronWolfModding/rF2SharedMemoryMapPlugin
-            - This is included by "Simhub" and other popular tools, you may have it already
-          3. Download `LMU_Telemetry_Logger.exe`
-          4. Run the executable (no installation required)
-          5. Launch LMU and start driving
-          6. CSV files saved to `./telemetry_output/`
+          2. **Enable rF2SharedMemoryMapPlugin** in LMU
+            - Edit `Documents\Studio 397\UserData\<YourPlayer>\CustomPluginVariables.JSON`
+            - Set `"Enabled": 1` for `rF2SharedMemoryMapPlugin`
+            - This plugin is included with LMU (just needs to be enabled)
 
           ### Requirements
-          - Windows 10/11
+          - Windows 10/11 (64-bit)
           - Le Mans Ultimate installed
           - **Visual C++ Runtimes** (from LMU's support/runtimes folder)
 
+          ### What's New
+          - 🎉 Professional Windows installer
+          - 🎉 System tray UI with icon state indicators
+          - 🎉 Start Menu and Desktop shortcuts
+          - 🎉 Configurable output directory
+          - 🎉 Auto-upgrade with data preservation
+
           ### Documentation
-          - See USER_GUIDE.md for detailed instructions
-          - See CHANGELOG.md for full changelog
-          - See WINDOWS_BUILD_INSTRUCTIONS.md to build from source
+          - See `USER_GUIDE.md` for detailed instructions
+          - See `CHANGELOG.md` for full changelog
+          - See `WINDOWS_BUILD_INSTRUCTIONS.md` to build from source
+          - See `installer/README.md` for installer build instructions
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
