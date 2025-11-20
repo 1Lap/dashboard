@@ -94,6 +94,17 @@ class TelemetryApp:
         session_info = self.telemetry_reader.get_session_info()
         session_info['session_id'] = self.telemetry_loop.session_manager.current_session_id
 
+        # Enrich with REST API data (car model, manufacturer, class) if available
+        if hasattr(self.telemetry_reader, 'rest_api') and self.telemetry_reader.rest_api:
+            car_name = session_info.get('car_name')
+            if car_name:
+                vehicle_meta = self.telemetry_reader.rest_api.lookup_vehicle(car_name)
+                if vehicle_meta:
+                    session_info['car_model'] = vehicle_meta.get('car_model', '')
+                    session_info['manufacturer'] = vehicle_meta.get('manufacturer', '')
+                    session_info['car_class'] = vehicle_meta.get('class', '')
+                    session_info['team_name'] = vehicle_meta.get('team', '')
+
         # Detect sector boundaries from lap data
         track_length = session_info.get('track_length', 0.0)
         if track_length > 0 and lap_data:

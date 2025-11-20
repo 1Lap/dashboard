@@ -199,7 +199,23 @@ class LMURestAPI:
             # Cache not loaded yet
             self.fetch_vehicle_data()
 
-        return self.vehicle_cache.get(vehicle_name) if self.vehicle_cache else None
+        if not self.vehicle_cache:
+            return None
+
+        # Try exact match first
+        if vehicle_name in self.vehicle_cache:
+            return self.vehicle_cache[vehicle_name]
+
+        # If no exact match, try fuzzy matching (handle version suffix mismatch)
+        # Shared memory: "Team Name #123:CODE"
+        # REST API:      "Team Name #123:CODE 1.42"
+        for cached_name, metadata in self.vehicle_cache.items():
+            # Check if cached name starts with the vehicle name
+            # This handles the case where REST API has version suffixes
+            if cached_name.startswith(vehicle_name + ' '):
+                return metadata
+
+        return None
 
     def clear_cache(self):
         """Clear cached vehicle data"""
