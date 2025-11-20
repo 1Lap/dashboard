@@ -4,7 +4,7 @@
 
 This is a background telemetry logger for Le Mans Ultimate (LMU) that automatically captures and exports telemetry data to CSV files. The project uses a **cross-platform development strategy**: develop on macOS with mocks, then test/deploy on Windows with real LMU data.
 
-**Current Status**: Phases 1-6 complete (core system fully functional, tested on Windows with live LMU), Phase 7 in progress (executable built, final validation pending)
+**Current Status**: Phases 1-4 and 6 complete (core system fully functional, tested on Windows with live LMU), Phase 5 (System Tray UI) not yet implemented, Phase 7 in progress (executable built, final validation pending)
 
 ## Development Philosophy
 
@@ -104,12 +104,18 @@ pytest --cov=src --cov-report=html
 
 ## Phase Status
 
-### ✅ Completed (Phases 1-6)
+### Phase Progress (Phases 1-4, 6 Complete; Phase 5 Pending)
 - [x] Phase 1: Setup & Cross-Platform Development Foundation
 - [x] Phase 2: Core Logger Service Development
 - [x] Phase 3: CSV Formatter Implementation (MVP format)
 - [x] Phase 4: File Management & Configuration
-- [x] Phase 5: System Tray UI & User Controls
+- [ ] Phase 5: System Tray UI & User Controls ⚠️ **NOT IMPLEMENTED**
+  - [ ] System tray icon and menu
+  - [ ] Start/Stop/Pause controls via tray
+  - [ ] Settings/configuration UI
+  - [ ] Status display in tray
+  - **Note**: `pystray` is in requirements.txt but no implementation exists yet
+  - **Current**: Application runs as command-line only (`example_app.py`)
 - [x] Phase 6: Windows Testing & Real Telemetry
   - [x] `RealTelemetryReader` implemented using `pyRfactor2SharedMemory`
   - [x] Tested with live LMU on Windows
@@ -323,6 +329,15 @@ Before making significant changes:
 - **Platform-specific code?** → Ensure cross-platform compatibility maintained
 
 ## Success Criteria
+
+### ⚠️ Phase 5 (System Tray UI & User Controls) - NOT IMPLEMENTED
+- [ ] System tray icon displays on Windows/macOS
+- [ ] Tray menu shows: Start/Stop, Pause/Resume, Settings, Quit
+- [ ] Status indicator in tray (Idle, Detecting, Logging)
+- [ ] Settings dialog for output directory configuration
+- [ ] Balloon notifications for lap completion
+- [ ] Graceful startup and shutdown
+- [ ] Auto-start with Windows option (optional)
 
 ### ✅ Phase 6 (Windows Testing) - COMPLETE
 - [x] RealTelemetryReader implemented
