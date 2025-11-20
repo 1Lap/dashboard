@@ -19,6 +19,7 @@ On Windows: Will use real LMU telemetry (when implemented)
 import time
 import signal
 import sys
+from datetime import datetime
 from src.telemetry_loop import TelemetryLoop
 from src.csv_formatter import CSVFormatter
 from src.file_manager import FileManager
@@ -141,6 +142,18 @@ class TelemetryApp:
         print(f"    Car: {opponent_lap_data.car_name or 'Unknown'}")
         print(f"    Samples: {len(opponent_lap_data.samples)}")
         print(f"    Fastest: {opponent_lap_data.is_fastest}")
+
+        # Validate lap time (filter out out-laps, formation laps, invalid laps)
+        MIN_LAP_TIME = 30.0  # Minimum realistic lap time in seconds
+        if opponent_lap_data.lap_time < MIN_LAP_TIME:
+            print(f"    [SKIPPED] Lap time too short ({opponent_lap_data.lap_time:.3f}s < {MIN_LAP_TIME}s) - likely out-lap or invalid")
+            return
+
+        # Validate samples count
+        MIN_SAMPLES = 10  # Minimum samples for valid lap
+        if len(opponent_lap_data.samples) < MIN_SAMPLES:
+            print(f"    [SKIPPED] Too few samples ({len(opponent_lap_data.samples)} < {MIN_SAMPLES})")
+            return
 
         # Build session info specifically for opponent (don't use player's info!)
         session_info = {

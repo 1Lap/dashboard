@@ -165,8 +165,8 @@ class TelemetryLoop:
                     for opponent_lap_data in completed_laps:
                         self.on_opponent_lap_complete(opponent_lap_data)
             except Exception as e:
-                # Don't fail the main loop if opponent tracking has issues
-                pass
+                # Log error but don't crash main loop
+                print(f"[WARNING] Opponent tracking error: {e}")
 
         # Update opponent count in status
         status['opponents_tracked'] = self.opponent_tracker.get_opponent_count() if self.track_opponents else 0
