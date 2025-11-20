@@ -34,8 +34,8 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 ; Wizard appearance
 WizardStyle=modern
-WizardImageFile=compiler:WizModernImage-IS.bmp
-WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
+; Use default wizard images (embedded in Inno Setup)
+; WizardImageFile and WizardSmallImageFile will use defaults if not specified
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
