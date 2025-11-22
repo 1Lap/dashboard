@@ -25,7 +25,7 @@ Notes:
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # ==============================================================================
@@ -197,7 +197,7 @@ def sample_telemetry_data():
         - Matches expected structure from monitor
     """
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "lap": 5,
         "position": 2,
         "fuel": 45.3,
@@ -222,5 +222,9 @@ def sample_telemetry_data():
         },
         "engine_water_temp": 92.5,
         "track_temp": 28.5,
-        "ambient_temp": 22.0
+        "ambient_temp": 22.0,
+        "player_name": "Test Driver",
+        "car_name": "Test Car",
+        "track_name": "Test Track",
+        "session_type": "race"
     }

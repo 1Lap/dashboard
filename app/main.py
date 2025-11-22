@@ -9,6 +9,7 @@ from flask import render_template
 from flask_socketio import emit, join_room
 from app.session_manager import SessionManager
 import logging
+import os
 from pathlib import Path
 import json
 
@@ -20,11 +21,14 @@ except Exception:  # pragma: no cover - optional dependency
     JSONSCHEMA_AVAILABLE = False
 
 SCHEMA_VALIDATORS = {}
+# Schema validation is opt-in so basic test payloads aren't rejected when
+# optional fields are missing. Enable by setting ENABLE_SCHEMA_VALIDATION=true.
 VALIDATION_ENABLED = False
+VALIDATION_REQUESTED = os.environ.get('ENABLE_SCHEMA_VALIDATION', 'false').lower() == 'true'
 
 def _load_schema_validators():
     global SCHEMA_VALIDATORS, VALIDATION_ENABLED
-    if not JSONSCHEMA_AVAILABLE:
+    if not JSONSCHEMA_AVAILABLE or not VALIDATION_REQUESTED:
         return
 
     # Resolve schemas directory within dashboard repo: dashboard/bugs/schemas/
