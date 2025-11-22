@@ -9,6 +9,41 @@ from flask import render_template
 from flask_socketio import emit, join_room
 from app.session_manager import SessionManager
 import logging
+from pathlib import Path
+import json
+
+# Optional schema validation (enabled if jsonschema is available)
+try:
+    from jsonschema import Draft202012Validator, ValidationError
+    JSONSCHEMA_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency
+    JSONSCHEMA_AVAILABLE = False
+
+SCHEMA_VALIDATORS = {}
+VALIDATION_ENABLED = False
+
+def _load_schema_validators():
+    global SCHEMA_VALIDATORS, VALIDATION_ENABLED
+    if not JSONSCHEMA_AVAILABLE:
+        return
+
+    # Resolve schemas directory within dashboard repo: dashboard/bugs/schemas/
+    schemas_dir = Path(__file__).resolve().parents[1] / 'bugs' / 'schemas'
+    telemetry_schema_path = schemas_dir / 'telemetry_update.schema.json'
+    setup_schema_path = schemas_dir / 'setup_data.schema.json'
+
+    try:
+        with telemetry_schema_path.open('r', encoding='utf-8') as f:
+            telemetry_schema = json.load(f)
+        with setup_schema_path.open('r', encoding='utf-8') as f:
+            setup_schema = json.load(f)
+
+        SCHEMA_VALIDATORS['telemetry_update'] = Draft202012Validator(telemetry_schema)
+        SCHEMA_VALIDATORS['setup_data'] = Draft202012Validator(setup_schema)
+        VALIDATION_ENABLED = True
+    except Exception:
+        # If loading fails, leave validation disabled but keep server running
+        VALIDATION_ENABLED = False
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -155,6 +190,14 @@ def register_socketio_handlers(socketio):
         Emits:
             setup_update: Setup data to all clients in session room
         """
+        # Validate against schema if enabled
+        if VALIDATION_ENABLED:
+            try:
+                SCHEMA_VALIDATORS['setup_data'].validate(data)
+            except Exception as e:
+                logger.warning(f"Invalid setup_data payload rejected: {e}")
+                return
+
         session_id = data.get('session_id')
         timestamp = data.get('timestamp')
         setup = data.get('setup')
@@ -197,6 +240,14 @@ def register_socketio_handlers(socketio):
         Emits:
             telemetry_update: Telemetry data to all clients in session room
         """
+        # Validate against schema if enabled
+        if VALIDATION_ENABLED:
+            try:
+                SCHEMA_VALIDATORS['telemetry_update'].validate(data)
+            except Exception as e:
+                logger.warning(f"Invalid telemetry_update payload rejected: {e}")
+                return
+
         session_id = data.get('session_id')
         telemetry = data.get('telemetry')
 
@@ -269,3 +320,6 @@ def register_socketio_handlers(socketio):
                 'session_id': session_id,
                 'telemetry': session['telemetry']
             })
+
+# Initialize schema validators at import time
+_load_schema_validators()
