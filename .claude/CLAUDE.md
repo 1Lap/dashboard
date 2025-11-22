@@ -1,113 +1,231 @@
-# 1Lap - Claude Instructions
+# 1Lap Dashboard Server - Claude Instructions
 
 ## Project Overview
 
-This is a background telemetry logger for Le Mans Ultimate (LMU) that automatically captures and exports telemetry data to CSV files. The project uses a **cross-platform development strategy**: develop on macOS with mocks, then test/deploy on Windows with real LMU data.
+This is the **1Lap Race Dashboard Server** - a Flask-based WebSocket server that receives real-time telemetry from a monitor (running on Windows with LMU) and broadcasts it to web-based dashboards accessible by endurance racing team members.
 
-**Current Status**: Phases 1-6 complete (core system fully functional, tested on Windows with live LMU, auto-update system implemented), Phase 7 in progress (executable built, final validation pending)
+**Current Status**: Planning phase - feature specifications complete, ready for implementation
+
+**Purpose**: During endurance races, team members need to monitor car telemetry (fuel, tire temps/pressures, setup) without distracting the driver. This server provides a central hub that receives telemetry and serves it to multiple web dashboards via secret URLs.
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         LMU (Windows)                           │
+│  ┌─────────────────┐              ┌────────────────────┐       │
+│  │ Shared Memory   │              │   REST API         │       │
+│  │ (Telemetry)     │              │   (localhost:6397) │       │
+│  └────────┬────────┘              └─────────┬──────────┘       │
+└───────────┼─────────────────────────────────┼──────────────────┘
+            │                                 │
+            └────────────┬────────────────────┘
+                         ▼
+            ┌─────────────────────────┐
+            │   monitor (Python)      │  ← Separate repo
+            │   - Reads shared memory │
+            │   - Reads REST API      │
+            │   - Publishes to server │
+            └────────────┬────────────┘
+                         │ WebSocket (2Hz)
+                         ▼
+            ┌─────────────────────────┐
+            │   server (Flask)        │  ← THIS REPO
+            │   - Session manager     │
+            │   - WebSocket broadcast │
+            │   - Serves dashboard UI │
+            └────────────┬────────────┘
+                         │ WebSocket (bidirectional)
+                         ▼
+            ┌─────────────────────────┐
+            │   Web Browser           │
+            │   - Dashboard UI        │
+            │   - Auto-updating       │
+            │   - Mobile responsive   │
+            └─────────────────────────┘
+```
+
+## Three-Repository Architecture
+
+| Repository | Purpose | Status |
+|------------|---------|--------|
+| **monitor** | Data collector (fork of writer) | Planned |
+| **server** | Dashboard web service (Flask) | **THIS REPO** - Planning |
+| **writer** | CSV telemetry logger | Complete (archived in _archive/) |
 
 ## Development Philosophy
 
 ### Test-Driven Development (TDD)
 - **ALWAYS write tests before code** when implementing new features
 - Tests should fail first, then write code to make them pass
-- Current coverage: **175/175 tests passing, 100% coverage of implemented modules** (includes 54 auto-update tests)
+- Target coverage: **80%+ on core modules**
 - If tests can't pass after trying, ask user before modifying tests
 
-### Cross-Platform Architecture
-- Abstract platform-specific code behind interfaces
-- `src/telemetry/telemetry_interface.py` - defines `TelemetryReaderInterface`
-- `src/telemetry/telemetry_mock.py` - macOS implementation (simulates telemetry)
-- `src/telemetry/telemetry_real.py` - Windows implementation ✅ COMPLETE
-- Platform detection: `sys.platform == 'win32'` → real, else → mock
+### Feature-First Development
+- Each feature is fully specified in `bugs/` directory before implementation
+- Follow the implementation order in `bugs/README.md`
+- Mark features complete as you implement them
+- Update bug files when resolving issues
 
-## Project Architecture
+## Project Structure
 
-### Core Components (All Complete ✅)
+```
+server/
+├── .claude/
+│   └── CLAUDE.md                    # This file
+├── bugs/
+│   ├── README.md                    # Feature index & status
+│   ├── session_management.md        # Session & UUID management
+│   ├── flask_app_structure.md       # App factory & routes
+│   ├── websocket_server.md          # WebSocket communication
+│   ├── dashboard_ui_frontend.md     # HTML/CSS/JS frontend
+│   ├── secret_url_generation.md     # Session URL handling
+│   ├── testing_infrastructure.md    # Test setup & specs
+│   ├── error_handling_reconnection.md  # Reliability features
+│   ├── deployment_configuration.md  # Local/cloud deployment
+│   └── documentation_and_readme.md  # Docs templates
+├── app/
+│   ├── __init__.py                  # Flask app factory
+│   ├── main.py                      # Routes + WebSocket handlers
+│   ├── session_manager.py           # Session management
+│   └── models.py                    # Data structures (future)
+├── static/
+│   ├── css/dashboard.css            # Dashboard styles
+│   ├── js/dashboard.js              # WebSocket client + UI
+│   └── img/logo.png                 # Assets
+├── templates/
+│   └── dashboard.html               # Dashboard UI template
+├── tests/
+│   ├── conftest.py                  # Shared fixtures
+│   ├── test_session_manager.py      # SessionManager tests
+│   ├── test_main.py                 # Route tests
+│   ├── test_websocket.py            # WebSocket tests
+│   ├── test_integration.py          # E2E tests
+│   └── test_data.py                 # Test data generators
+├── run.py                           # Development server entry point
+├── config.py                        # Server configuration
+├── gunicorn_config.py               # Production server config
+├── requirements.txt                 # Dependencies
+├── requirements-dev.txt             # Testing dependencies
+├── pytest.ini                       # Test configuration
+├── Dockerfile                       # Container config (optional)
+├── docker-compose.yml               # Container orchestration (optional)
+├── Procfile                         # Heroku deployment (optional)
+├── README.md                        # Project README
+├── RACE_DASHBOARD_PLAN.md           # Complete implementation plan
+├── PROJECT_STATUS.md                # Implementation progress tracker
+└── _archive/                        # Archived writer project code
+```
 
-1. **TelemetryReader** (`src/telemetry/`)
-   - Interface-based design for cross-platform support
-   - Mock reader simulates realistic racing data with lap progression
-   - Real reader uses `pyRfactor2SharedMemory` (Windows only)
+## Core Components (To Be Implemented)
 
-2. **ProcessMonitor** (`src/process_monitor.py`)
-   - Auto-detects target process (LMU.exe on Windows, configurable on macOS)
-   - Uses `psutil` for cross-platform process detection
-   - Case-insensitive, partial name matching
+### 1. SessionManager (`app/session_manager.py`)
+- Generate unique session IDs (UUID4)
+- Store session data (setup + telemetry)
+- Support multiple concurrent sessions
+- **Spec:** `bugs/session_management.md`
 
-3. **SessionManager** (`src/session_manager.py`)
-   - Tracks session state: IDLE → DETECTED → LOGGING → (lap complete)
-   - Detects lap changes by monitoring lap number
-   - Buffers telemetry samples for current lap (with automatic normalization)
-   - Generates unique session IDs (timestamp-based)
-   - Integrates SampleNormalizer for data conversion
+### 2. Flask App (`app/__init__.py`, `app/main.py`)
+- App factory pattern
+- HTTP routes: `/` (home), `/dashboard/<session_id>` (dashboard)
+- Static file serving
+- Configuration management
+- **Spec:** `bugs/flask_app_structure.md`
 
-4. **SampleNormalizer** (`src/mvp_format.py`)
-   - Converts raw telemetry to canonical MVP format
-   - Handles fractional to percentage conversion (0-1 → 0-100% for throttle/brake/steering)
-   - Sector estimation using track length
-   - Ensures consistent field naming and units
+### 3. WebSocket Server (`app/main.py`)
+- Monitor → Server communication
+  - `request_session_id` → `session_id_assigned`
+  - `setup_data` (once per session)
+  - `telemetry_update` (2Hz)
+- Dashboard → Server communication
+  - `join_session` → room joined
+- Server → Dashboard broadcasting
+  - `setup_update` (on join + when received)
+  - `telemetry_update` (2Hz)
+- Room-based broadcasting (one room per session)
+- **Spec:** `bugs/websocket_server.md`
 
-5. **TelemetryLoop** (`src/telemetry_loop.py`)
-   - Main polling loop (~100Hz by default)
-   - Integrates ProcessMonitor, SessionManager, TelemetryReader
-   - Triggers callbacks on lap completion
-   - Supports pause/resume, start/stop
+### 4. Dashboard UI (`templates/dashboard.html`, `static/`)
+- Single-page web application
+- Real-time telemetry display
+  - Session info (driver, car, track, position, lap)
+  - Fuel (liters, %, estimated laps remaining)
+  - Tire temperatures (FL, FR, RL, RR)
+  - Tire pressures (FL, FR, RL, RR)
+  - Brake temperatures
+  - Engine temperature
+  - Weather (track + ambient temps)
+- Car setup display (JSON from REST API)
+- Connection status indicator
+- Mobile responsive design
+- **Spec:** `bugs/dashboard_ui_frontend.md`
 
-6. **CSVFormatter** (`src/csv_formatter.py`)
-   - Formats telemetry data to **LMUTelemetry v2 MVP format**
-   - 2 sections: metadata preamble (Key,Value pairs) + telemetry samples (12 columns)
-   - Metadata: Format, Version, Player, TrackName, CarName, SessionUTC, LapTime [s], TrackLen [m]
-   - 12 telemetry columns: LapDistance, LapTime, Sector, Speed, EngineRevs, ThrottlePercentage, BrakePercentage, Steer, Gear, X, Y, Z
-   - File size: ~1 MB per lap (down from ~11 MB in old format)
-   - See `example.csv` and `telemetry_format_analysis.md` for exact format specification
+### 5. Testing Infrastructure (`tests/`)
+- pytest configuration
+- Unit tests (SessionManager, routes, WebSocket)
+- Integration tests (E2E flow)
+- Test fixtures and data generators
+- Coverage reporting (80%+ target)
+- **Spec:** `bugs/testing_infrastructure.md`
 
-7. **FileManager** (`src/file_manager.py`)
-   - Saves CSV files to disk with configurable naming
-   - Default: `{session_id}_lap{lap}.csv`
-   - Sanitizes filenames, manages output directory
-   - Utilities: list, delete, filter by session
+## Implementation Phases
 
-8. **SettingsUI** (`src/settings_ui.py`) ✅ **NEW** (2025-11-20)
-   - GUI settings dialog using tkinter (cross-platform, built-in)
-   - `SettingsConfig` - backend configuration management
-   - `SettingsDialog` - GUI dialog for user settings
-   - Configuration: output directory, opponent tracking, poll rate, auto-update preferences
-   - Persistence: saves/loads config.json
-   - Validation: ensures settings are valid before saving
-   - Command-line integration: `python example_app.py --settings`
+### Phase 1: MVP (Core Functionality) - ~2 weeks
+**Features:** (See `bugs/README.md` for details)
+1. Session Management ⭐ HIGH PRIORITY
+2. Flask App Structure ⭐ HIGH PRIORITY
+3. WebSocket Server ⭐ HIGH PRIORITY
+4. Dashboard UI Frontend ⭐ HIGH PRIORITY
+5. Secret URL Generation ⭐ HIGH PRIORITY
+6. Testing Infrastructure ⭐ HIGH PRIORITY
 
-9. **Auto-Update System** ✅ **NEW** (2025-11-20)
-   - **Version Manager** (`src/version.py`) - Version comparison and validation
-   - **Update Checker** (`src/update_checker.py`) - GitHub releases API integration
-     - Check for new releases from GitHub
-     - Download .exe files with progress reporting
-     - SHA256 checksum verification
-     - HTTPS-only downloads for security
-   - **Update UI** (`src/update_ui.py`) - User interface components
-     - `UpdateDialog` - Tkinter dialog for update notifications
-     - `UpdateNotification` - System tray balloon notifications
-   - **Update Manager** (`src/update_manager.py`) - Orchestration layer
-     - Background update checking on startup
-     - Handle user responses (install, skip, remind later)
-     - Track skipped versions
-     - Launch external updater script
-   - **External Updater** (`updater.py`) - Standalone script for .exe replacement
-     - Waits for app to exit
-     - Backs up old .exe
-     - Replaces with new .exe
-     - Relaunches app
-   - **Integration**:
-     - `tray_app.py` - Auto-check on startup, "Check for Updates" menu
-     - Settings UI checkbox for "Check for updates on startup"
-   - **54 comprehensive tests** covering all update components
-   - See `AUTO_UPDATE_IMPLEMENTATION_PLAN.md` for complete details
+**Success Criteria:**
+- Monitor connects and receives session ID
+- Monitor publishes setup + telemetry (2Hz)
+- Dashboard loads at secret URL
+- Dashboard displays real-time telemetry
+- Multiple dashboards can view same session
+- Mobile responsive UI
+- 80%+ test coverage
+- All unit/integration tests pass
 
-### Integration Example
-- `example_app.py` - Complete working application
-- Demonstrates all components working together
-- Run with: `python example_app.py` (uses saved config)
-- Configure settings: `python example_app.py --settings` (shows GUI dialog)
+### Phase 2: Polish & Deployment - ~1 week
+**Features:**
+7. Error Handling & Reconnection 🔶 MEDIUM PRIORITY
+8. Deployment Configuration 🔶 MEDIUM PRIORITY
+9. Documentation & README 🔶 MEDIUM PRIORITY
+
+**Success Criteria:**
+- Auto-reconnection works (monitor + dashboard)
+- Error handling graceful (no crashes)
+- Documentation complete
+- Can deploy to local network
+- Can deploy to cloud (Heroku/Railway)
+
+## Technology Stack
+
+**Backend:**
+- Python 3.11+
+- Flask 2.3+ (web framework)
+- Flask-SocketIO 5.3+ (WebSocket support)
+- python-socketio 5.9+ (client library)
+- eventlet (async mode)
+- gunicorn (production server)
+
+**Frontend:**
+- HTML5 + CSS3
+- Vanilla JavaScript (no framework for MVP)
+- Socket.IO client (CDN)
+
+**Testing:**
+- pytest 7.4+
+- pytest-cov 4.1+ (coverage)
+- pytest-flask 1.2+ (Flask testing)
+
+**Deployment:**
+- Local: Python built-in server
+- Production: Gunicorn + eventlet
+- Optional: Docker, Heroku, Railway
 
 ## Testing Requirements
 
@@ -117,322 +235,268 @@ This is a background telemetry logger for Le Mans Ultimate (LMU) that automatica
 pytest -v
 
 # Specific module
-pytest tests/test_telemetry_loop.py -v
+pytest tests/test_session_manager.py -v
 
 # With coverage
-pytest --cov=src --cov-report=html
+pytest --cov=app --cov-report=html
+
+# Unit tests only
+pytest -m unit
+
+# Integration tests only
+pytest -m integration
 ```
 
 ### Test Organization
 - Each module has corresponding test file: `test_<module>.py`
-- Use pytest fixtures for setup/teardown (see `test_file_manager.py`)
-- Mock time-dependent behavior when needed
+- Use pytest fixtures for setup/teardown (see `tests/conftest.py`)
+- Mock WebSocket clients for testing
 - Test edge cases and error conditions
 
-### Test Coverage by Module
-- `test_telemetry_mock.py` - 7 tests
-- `test_process_monitor.py` - 5 tests
-- `test_session_manager.py` - 8 tests
-- `test_telemetry_loop.py` - 13 tests
-- `test_csv_formatter.py` - 6 tests (updated for MVP format)
-- `test_sample_normalizer.py` - 5 tests (NEW - MVP format normalization)
-- `test_file_manager.py` - 16 tests
-- `test_settings_ui.py` - 13 tests (NEW - Settings UI configuration)
-- `test_opponent_tracker.py` - 11 tests
-- `test_example_app_integration.py` - 4 tests
-- `test_telemetry_real.py` - 2 tests
-- `test_tray_ui.py` - 15 tests (NEW - System Tray UI)
-- `test_version.py` - 11 tests (NEW - Auto-update version management)
-- `test_update_checker.py` - 16 tests (NEW - Auto-update GitHub integration)
-- `test_update_ui.py` - 12 tests (NEW - Auto-update UI components)
-- `test_update_manager.py` - 15 tests (NEW - Auto-update orchestration)
-- **Total: 175 tests passing** (including 54 auto-update tests)
-
-## Phase Status
-
-### Phase Progress (Phases 1-6 Complete; Phase 7 In Progress)
-- [x] Phase 1: Setup & Cross-Platform Development Foundation
-- [x] Phase 2: Core Logger Service Development
-- [x] Phase 3: CSV Formatter Implementation (MVP format)
-- [x] Phase 4: File Management & Configuration
-- [x] Phase 5: System Tray UI & User Controls ✅ **COMPLETE** (2025-11-20)
-  - [x] System tray icon and menu ✅ **COMPLETE**
-  - [x] Start/Stop/Pause controls via tray ✅ **COMPLETE**
-  - [x] Settings/configuration UI ✅ **COMPLETE**
-    - [x] Settings dialog with tkinter GUI
-    - [x] Output directory, opponent tracking, poll rate configuration
-    - [x] Save/Load/Validate config.json
-    - [x] Integrated with `example_app.py` and `tray_app.py` (--settings flag)
-    - [x] 13 comprehensive tests
-  - [x] Status display in tray with tooltips ✅ **COMPLETE**
-  - [x] Icon state indicators (gray/yellow/green/orange/red) ✅ **COMPLETE**
-  - [x] Open Output Folder menu item ✅ **COMPLETE**
-  - [x] Threading integration (telemetry in background, tray in main thread) ✅ **COMPLETE**
-  - **Implementation**:
-    - `src/tray_ui.py` - TrayUI class with pystray integration
-    - `tray_app.py` - New entry point for system tray mode
-    - `tests/test_tray_ui.py` - 15 comprehensive tests
-    - All Must Have and Nice to Have requirements met
-  - **Usage**: `python tray_app.py` or `python tray_app.py --settings`
-- [x] Phase 6: Windows Testing & Real Telemetry
-  - [x] `RealTelemetryReader` implemented using `pyRfactor2SharedMemory`
-  - [x] Tested with live LMU on Windows
-  - [x] CSV output validated (MVP format)
-  - [x] All 60 tests passing
-  - [x] MVP format refactor complete
-    - [x] `SampleNormalizer` for data conversion
-    - [x] `CSVFormatter` updated to 12-column format
-    - [x] Input scaling (0-100% for throttle/brake/steer)
-
-### 🔄 Current Phase: Phase 7 - Distribution
-**Status**: Installer implemented, ready for testing and release
-
-Completed:
-- [x] PyInstaller build script (`build.bat`)
-- [x] Executable created (`1Lap_v1.0/1Lap.exe`)
-- [x] User documentation (`USER_GUIDE.md`)
-- [x] Windows installer implementation ✅ **NEW** (2025-11-20)
-  - [x] Inno Setup installer script (`installer/1Lap_Setup.iss`)
-  - [x] Build automation script (`build_installer.bat`)
-  - [x] Default configuration template (`installer/config_default.json`)
-  - [x] Installer documentation (`installer/README.md`)
-  - [x] Updated USER_GUIDE.md with installation instructions
-  - [x] Custom output directory selection during installation
-  - [x] Upgrade detection with data preservation
-  - [x] Uninstall with optional data cleanup
-  - [x] Start Menu shortcuts (app, output folder, user guide, uninstall)
-  - [x] Optional desktop shortcut and auto-start with Windows
-  - [x] Registry integration (Programs & Features)
-
-Remaining:
-- [ ] Build and test the installer on Windows
-- [ ] Final validation of v1.0 installer
-- [ ] Performance optimization (address 43Hz capture rate - currently acceptable)
-- [ ] Release preparation (GitHub release, changelog)
-- [ ] Optional: Code signing certificate (future enhancement)
-
-## Important Code Patterns
-
-### 1. Platform Detection
-```python
-from src.telemetry.telemetry_interface import get_telemetry_reader
-
-# Automatically returns correct implementation
-reader = get_telemetry_reader()  # Mock on macOS, Real on Windows
-```
-
-### 2. Lap Completion Callback
-```python
-def on_lap_complete(lap_data, lap_summary):
-    # lap_data: List[Dict] - all samples
-    # lap_summary: Dict - lap time, sectors, etc.
-    csv = formatter.format_lap(lap_data, lap_summary, session_info)
-    file_manager.save_lap(csv, lap_summary, session_info)
-
-loop = TelemetryLoop({'on_lap_complete': on_lap_complete})
-```
-
-### 3. Telemetry Data Structure
-
-**Raw telemetry** (from TelemetryReader) includes 100+ fields - see `telemetry_mock.py` for complete list.
-
-**Normalized telemetry** (after SampleNormalizer) uses canonical MVP field names:
-```python
-{
-    'LapDistance [m]': float,      # Lap distance in meters
-    'LapTime [s]': float,           # Lap time in seconds
-    'Sector [int]': int,            # Current sector (0-3)
-    'Speed [km/h]': float,          # Speed in km/h
-    'EngineRevs [rpm]': float,      # Engine RPM
-    'ThrottlePercentage [%]': float,  # 0-100%
-    'BrakePercentage [%]': float,     # 0-100%
-    'Steer [%]': float,               # -100 to +100%
-    'Gear [int]': int,              # Current gear
-    'X [m]': float,                 # X position (or None)
-    'Y [m]': float,                 # Y position (or None)
-    'Z [m]': float,                 # Z position (or None)
-}
-```
-See `telemetry_format_analysis.md` for complete MVP format specification.
+### Coverage Goals
+- **SessionManager** - 100% (simple logic)
+- **Flask routes** - 90%
+- **WebSocket handlers** - 90%
+- **Overall** - 80%+
 
 ## Common Commands
 
 ### Development
 ```bash
-# Activate virtual environment
-source venv/bin/activate  # macOS/Linux
-venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt -r requirements-dev.txt
-
-# Windows-specific dependencies (when on Windows)
-pip install -r requirements-windows.txt
+# Start development server
+python run.py
 
 # Run tests
 pytest -v
 
-# Run example app
-python example_app.py
+# Coverage report
+pytest --cov=app --cov-report=html
 ```
 
-### Git Workflow
+### Production
 ```bash
-# Check status
-git status
+# Start production server
+gunicorn -c gunicorn_config.py run:app
 
-# Run tests before committing
-pytest -v
+# With Docker
+docker-compose up -d
 
-# Commit with tests passing
-git add -A
-git commit -m "descriptive message"
-
-# Create PR (when ready)
-gh pr create --draft
+# Deploy to Heroku
+git push heroku main
 ```
 
-### Bug Tracking Workflow
+## API Contracts
 
-**IMPORTANT**: When fixing bugs listed in the `bugs/` folder, always update the bug file to reflect the resolution.
+### WebSocket Events (Monitor → Server)
 
-**When resolving a bug:**
-1. **Update the bug file** - Add a status section at the top:
-   ```markdown
-   ## Status: ✅ RESOLVED
-
-   **Resolved:** YYYY-MM-DD
-   **Commit:** <commit-hash>
-   **Branch:** <branch-name>
-
-   **Solution:** Brief description of how the bug was fixed.
-
-   ---
-   ```
-
-2. **Keep the original description** - Don't delete the bug details; they provide valuable context and history
-
-3. **Commit the bug file updates** - Include bug file updates in the same commit or a follow-up commit
-
-**Example workflow:**
-```bash
-# 1. Fix the bug
-# 2. Run tests
-pytest -v
-
-# 3. Get the commit hash
-git log --oneline -1
-
-# 4. Update the bug file with status
-# 5. Commit both code and bug documentation
-git add src/fixed_file.py bugs/bug_description.md
-git commit -m "Fix bug: description"
+**`request_session_id`**
+```python
+# Payload: {}
+# Response: session_id_assigned event
 ```
 
-**Why this matters:**
-- Provides historical record of when and how bugs were fixed
-- Helps prevent duplicate work on already-resolved issues
-- Makes it easy to see which bugs are still open
-- Documents the solution for future reference
+**`setup_data`**
+```python
+{
+    'session_id': str,
+    'timestamp': ISO timestamp,
+    'setup': {
+        'suspension': {...},
+        'aerodynamics': {...},
+        'brakes': {...}
+    }
+}
+```
+
+**`telemetry_update`**
+```python
+{
+    'session_id': str,
+    'telemetry': {
+        'timestamp': ISO timestamp,
+        'lap': int,
+        'position': int,
+        'fuel': float,
+        'fuel_capacity': float,
+        'tire_pressures': {'fl': float, 'fr': float, 'rl': float, 'rr': float},
+        'tire_temps': {...},
+        'brake_temps': {...},
+        'engine_water_temp': float,
+        'track_temp': float,
+        'ambient_temp': float,
+        ...
+    }
+}
+```
+
+See `RACE_DASHBOARD_PLAN.md` lines 1244-1378 for complete API specification.
+
+## WebSocket Events (Server → Dashboard)
+
+**`setup_update`**
+- Sent when dashboard joins session (if setup available)
+- Sent when server receives setup from monitor
+- Payload: Same as `setup_data`
+
+**`telemetry_update`**
+- Sent at 2Hz when monitor publishes telemetry
+- Broadcast to all dashboards in session room
+- Payload: Same as `telemetry_update`
+
+## Important Patterns
+
+### Session URL Format
+```
+http://server:5000/dashboard/<session-id>
+
+Example:
+http://192.168.1.100:5000/dashboard/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+### Room-Based Broadcasting
+```python
+from flask_socketio import emit, join_room
+
+# Dashboard joins session room
+@socketio.on('join_session')
+def handle_join(data):
+    session_id = data['session_id']
+    join_room(session_id)
+
+# Broadcast to all dashboards in room
+@socketio.on('telemetry_update')
+def handle_telemetry(data):
+    session_id = data['session_id']
+    emit('telemetry_update', data, room=session_id)
+```
+
+## Bug Tracking Workflow
+
+**When implementing a feature:**
+1. Read the feature spec in `bugs/` directory
+2. Write tests first (TDD approach)
+3. Implement feature to make tests pass
+4. Update status in `bugs/README.md` and `PROJECT_STATUS.md`
+5. Commit with clear message
+
+**When fixing a bug:**
+1. Reproduce the bug
+2. Write a failing test
+3. Fix the bug (test passes)
+4. Update bug file with resolution status (see existing bugs for format)
+5. Commit both code and bug documentation
+
+**Bug file format:**
+```markdown
+## Status: ✅ RESOLVED
+
+**Resolved:** YYYY-MM-DD
+**Commit:** <commit-hash>
+**Branch:** <branch-name>
+
+**Solution:** Brief description of how the bug was fixed.
+
+---
+
+[Original bug description below...]
+```
 
 ## Important Files & References
 
 ### Key Files
-- `telemetry_format_analysis.md` - **MVP format specification** (LMUTelemetry v2, 12 channels)
-- `example.csv` - **Reference CSV output** (MVP format example)
-- `MVP_LOGGING_PLAN.md` - MVP format implementation checklist
-- `TECHNICAL_SPEC.md` - Detailed component specifications
-- `TELEMETRY_LOGGER_PLAN.md` - High-level architecture and plan
-- `example_app.py` - Working integration example
-- `BUGS.md` - Known issues and performance notes
+- **`RACE_DASHBOARD_PLAN.md`** - Complete implementation plan (1750 lines)
+- **`bugs/README.md`** - Feature index and implementation roadmap
+- **`PROJECT_STATUS.md`** - Current implementation progress
+- **`swagger-schema.json`** - LMU REST API reference (useful for setup data)
+- **`IRACING_FEASIBILITY.md`** - iRacing integration research (future)
 
-### Configuration Patterns
-```python
-# ProcessMonitor
-config = {'target_process': 'LMU.exe'}  # or 'python' for testing
+### Reference Material (Archived)
+- **`_archive/src/lmu_rest_api.py`** - LMU REST API client (reference)
+- **`_archive/src/telemetry/`** - Telemetry readers (could be reused by monitor)
+- **`_archive/tests/`** - Testing patterns and examples
 
-# TelemetryLoop
-config = {
-    'target_process': 'LMU.exe',
-    'poll_interval': 0.01,  # 100Hz
-    'on_lap_complete': callback_function
-}
+## Configuration
 
-# FileManager
-config = {
-    'output_dir': './telemetry_output',
-    'filename_format': '{session_id}_lap{lap}.csv'
-}
+### Development (`.env`)
+```bash
+DEBUG=True
+SECRET_KEY=dev-secret-key-change-in-production
+HOST=0.0.0.0
+PORT=5000
 ```
 
-## Known Issues & Performance Notes
+### Production
+```bash
+DEBUG=False
+SECRET_KEY=<random-secret-key>
+HOST=0.0.0.0
+PORT=5000
+CORS_ORIGINS=https://yourdomain.com
+```
 
-### Performance Issue: Low Capture Rate (From BUGS.md)
-- **Target**: 100Hz (0.01s poll interval)
-- **Actual**: ~20Hz observed in testing
-- **Impact**: Lower resolution data, may miss fast transients
-- **Potential causes**:
-  - Shared memory read overhead
-  - CSV formatting blocking the loop
-  - Windows I/O latency
-- **Status**: Open - needs profiling and optimization
-- **File**: See `BUGS.md` for full details and tracking
+## Deployment Options
 
-### Windows-Specific Notes
+### Local Network (Simplest)
+```bash
+# Run on driver's PC
+python run.py
 
-**RealTelemetryReader** (completed):
-- Uses `pyRfactor2SharedMemory` library for shared memory access
-- Requires LMU to be running for `is_available()` to return True
-- Falls back to MockTelemetryReader if library not installed
-- Handles unit conversions (Kelvin→Celsius, m/s→km/h, etc.)
-- Maps 100+ shared memory fields to telemetry dictionary
+# Access via LAN
+http://192.168.1.100:5000/dashboard/<session-id>
+```
 
-**Testing on Windows**:
-- Install dependencies: `pip install -r requirements-windows.txt`
-- Tests use mocking to avoid requiring live LMU
-- Integration testing requires LMU running
-- Check `BUGS.md` for known platform-specific issues
+### Cloud (Heroku/Railway/Render)
+```bash
+# Deploy to cloud
+git push heroku main
+
+# Access from anywhere
+https://1lap-dashboard.herokuapp.com/dashboard/<session-id>
+```
+
+See `bugs/deployment_configuration.md` for detailed deployment guides.
 
 ## Code Style & Conventions
 
-- **Docstrings**: All functions/classes have Google-style docstrings
-- **Type hints**: Use when helpful, especially for function signatures
+- **Docstrings**: Google-style for all functions/classes
+- **Type hints**: Use for function signatures
 - **Imports**: Group by stdlib, third-party, local
 - **Naming**:
   - snake_case for functions/variables
   - PascalCase for classes
   - UPPER_CASE for constants
-- **Line length**: Keep reasonable (~100 chars when possible)
+- **Line length**: ~100 chars when possible
 
 ## Troubleshooting
 
 ### Tests failing?
 1. Check virtual environment is activated
-2. Ensure all dependencies installed
-3. Read test output carefully - tests are descriptive
+2. Ensure all dependencies installed (`pip install -r requirements.txt requirements-dev.txt`)
+3. Read test output carefully
 4. Run single test file to isolate issue
 
-### Example app not detecting process?
-- macOS: Change `target_process` to a running process (e.g., 'python', 'Chrome')
-- Windows: Ensure LMU.exe is running
+### WebSocket not connecting?
+1. Check server is running
+2. Verify CORS configuration
+3. Check browser console for errors
+4. Ensure eventlet is installed
 
-### CSV format doesn't match?
-- Compare with `example.csv` line by line (MVP format reference)
-- Should have metadata preamble followed by 12-column telemetry data
-- Check field names match exactly (e.g., `LapDistance [m]`, not `LapDistance`)
-- Verify input percentages are 0-100, not 0-1
-- See `telemetry_format_analysis.md` for complete specification
+### Dashboard shows "Disconnected"?
+1. Check monitor is running and connected
+2. Verify session ID is correct
+3. Check server logs for errors
+4. Test WebSocket connection manually
 
 ## Next Session Checklist
 
 When continuing development:
 
 1. Pull latest code from git
-2. Activate virtual environment (`venv\Scripts\activate`)
+2. Activate virtual environment
 3. Run tests to verify everything works (`pytest -v`)
-4. Read this file for context
-5. Check `BUGS.md` for current known issues
-6. Review Phase 7 remaining tasks (see Phase Status above)
+4. Read `PROJECT_STATUS.md` for current progress
+5. Check `bugs/README.md` for next task
+6. Review feature spec in `bugs/` before implementing
 
 ## Questions to Ask User
 
@@ -440,39 +504,30 @@ Before making significant changes:
 - **Adding new dependencies?** → Ask first
 - **Changing test behavior?** → Only if tests can't pass after thorough attempts
 - **Modifying core architecture?** → Discuss rationale
-- **Platform-specific code?** → Ensure cross-platform compatibility maintained
+- **Deployment approach?** → Confirm local vs. cloud requirements
 
 ## Success Criteria
 
-### ✅ Phase 5 (System Tray UI & User Controls) - COMPLETE
-- [x] System tray icon displays on Windows/macOS
-- [x] Tray menu shows: Start/Stop, Pause/Resume, Open Folder, Quit
-- [x] Status indicator in tray (Idle, Detecting, Logging) via tooltips
-- [x] Settings dialog for output directory configuration (tkinter GUI)
-- [x] Icon state indicators (gray/yellow/green/orange/red)
-- [x] Graceful startup and shutdown
-- [x] Dynamic menu items based on state
-- [x] Cross-platform Open Folder support (Windows/macOS/Linux)
-- [x] 15 comprehensive unit tests
-- [ ] Balloon notifications for lap completion (not implemented - optional)
-- [ ] Auto-start with Windows option (not implemented - optional)
+**MVP Complete when:**
+- ✅ All Phase 1 features implemented (see `bugs/README.md`)
+- ✅ 80%+ test coverage
+- ✅ All tests passing
+- ✅ Can deploy to local network
+- ✅ Dashboard works on mobile devices
+- ✅ Documentation complete
 
-### ✅ Phase 6 (Windows Testing) - COMPLETE
-- [x] RealTelemetryReader implemented
-- [x] Reads data from LMU shared memory
-- [x] Example app works on Windows with live LMU
-- [x] CSV files generated match MVP format specification
-- [x] All 60 tests passing (with proper mocking for cross-platform)
-- [x] MVP format refactor complete
-
-### 🔄 Phase 7 (Distribution) - IN PROGRESS
-- [x] PyInstaller builds working .exe
-- [x] Basic user documentation (USER_GUIDE.md)
-- [ ] .exe final validation and testing
-- [ ] Performance optimization (20Hz→100Hz issue)
-- [ ] Documentation review and polish
-- [ ] Release preparation (version, changelog, etc.)
+**Production Ready when:**
+- ✅ All Phase 2 features complete
+- ✅ Error handling robust
+- ✅ Auto-reconnection works
+- ✅ Can deploy to cloud
+- ✅ User documentation complete
 
 ---
 
-**Remember**: This project follows TDD - write tests first, make them fail, then implement to make them pass. The user values this approach, so maintain it throughout.
+**Remember**:
+- Follow TDD - write tests first, make them fail, then implement
+- Reference feature specs in `bugs/` directory
+- Update `PROJECT_STATUS.md` as features are completed
+- The user values this systematic approach - maintain it throughout
+- The archived writer code in `_archive/` is for reference only

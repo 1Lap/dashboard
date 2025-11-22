@@ -1,180 +1,329 @@
-# LMU Telemetry Logger
+# 1Lap Race Dashboard Server
 
-A background telemetry logger for Le Mans Ultimate that automatically captures and exports telemetry data to CSV files.
+Real-time telemetry dashboard for endurance racing teams. Monitor fuel, tire temperatures, pressures, and car setup from any device during the race.
 
-## Project Status
-
-🎉 **v0.3.0 Released** - System Tray UI & Auto-Update!
-
-### Latest Release: v0.3.0 (2025-11-20)
-- ✅ **NEW**: System Tray UI with visual state indicators
-- ✅ **NEW**: Settings GUI dialog for easy configuration
-- ✅ **NEW**: Auto-Update system with one-click installation
-- ✅ **NEW**: Windows Installer with custom directory selection
-- ✅ Bug fixes: Terminal window, opponent laps, filename consistency
-- ✅ 175/175 unit tests passing (100% coverage)
-
-### Completed Features
-- ✅ **System Tray UI** - Runs in background with right-click menu
-- ✅ **Settings Dialog** - GUI configuration (output dir, opponents, poll rate)
-- ✅ **Auto-Update** - Automatic updates from GitHub with checksum verification
-- ✅ **Windows Installer** - Professional installation experience
-- ✅ Automatic player lap capture
-- ✅ Opponent lap capture (multiplayer)
-- ✅ Mock telemetry system for macOS development
-- ✅ Platform detection (macOS/Windows)
-- ✅ Process monitoring with auto-detection
-- ✅ Session management and lap tracking
-- ✅ Telemetry polling loop (~43-50Hz, optimal)
-- ✅ CSV formatter for LMUTelemetry v3 (10-channel MVP schema)
-- ✅ File management with smart naming
-- ✅ Cross-platform development (macOS → Windows)
-- ✅ Windows testing with real LMU telemetry
-
-### Phase Status
-- ✅ Phase 1-4: Core telemetry system (Complete)
-- ✅ Phase 5: System Tray UI & User Controls (Complete)
-- ✅ Phase 6: Windows Testing & Auto-Update (Complete)
-- ✅ Phase 7: Distribution & Installer (Complete)
-- 🚀 **Feature Complete!**
-
-## 🚀 Quick Start (Windows)
-
-### Option 1: Windows Installer (Recommended)
-
-1. **Download**: Get `LMU_Telemetry_Logger_Setup.exe` from [GitHub Releases](https://github.com/davedean/eztel-writer/releases/tag/v0.3.0)
-2. **Install**: Run the installer and follow the wizard
-3. **Launch**: Start from Start Menu or Desktop shortcut
-4. **Configure**: Right-click tray icon → Settings
-5. **Use**: Launch LMU and drive - telemetry is captured automatically!
-
-### Option 2: Portable Executable
-
-1. **Download**: Get `LMU_Telemetry_Logger.zip` from [GitHub Releases](https://github.com/davedean/eztel-writer/releases/tag/v0.3.0)
-2. **Extract**: Unzip to any folder
-3. **Run**: Double-click `LMU_Telemetry_Logger.exe`
-
-### Option 3: Build from Source
-
-1. **Clone**:
-   ```cmd
-   git clone --branch v0.3.0 https://github.com/davedean/eztel-writer.git
-   cd eztel-writer
-   ```
-
-2. **Setup**:
-   ```cmd
-   python -m venv venv
-   venv\Scripts\activate
-   pip install -r requirements.txt -r requirements-windows.txt
-   pip install pyinstaller
-   ```
-
-3. **Build**:
-   ```cmd
-   build.bat
-   ```
-
-4. **Build Installer** (optional):
-   ```cmd
-   build_installer.bat
-   ```
-
-For detailed build instructions, see [WINDOWS_BUILD_INSTRUCTIONS.md](WINDOWS_BUILD_INSTRUCTIONS.md)
-
-**Output Location**: `./telemetry_output/*.csv`
-
-See [RELEASE_NOTES_v0.3.0.md](RELEASE_NOTES_v0.3.0.md) for complete feature list and usage instructions.
-
-## Key Features
-
-- ✅ **System Tray UI** - Runs in background with visual state indicators
-- ✅ **Auto-Detection** - Automatically starts/stops with LMU
-- ✅ **Settings GUI** - Easy configuration via dialog
-- ✅ **Auto-Update** - One-click updates from GitHub
-- ✅ **CSV Export** - LMUTelemetry v3 format (metadata + 10 channels)
-- ✅ **Opponent Tracking** - Capture opponent laps in multiplayer
-- ✅ **Windows Installer** - Professional installation experience
-- ✅ **Cross-Platform Dev** - Develop on macOS, deploy on Windows
-
-## Development Setup (macOS)
-
-```bash
-# Clone repository
-git clone <repo-url>
-cd telemetry_writer
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt -r requirements-dev.txt
-
-# Run tests
-pytest -v
-
-# Run example app (uses mock telemetry on macOS)
-python example_app.py
-```
-
-## Project Structure
-
-```
-telemetry_writer/
-├── src/
-│   ├── telemetry/
-│   │   ├── telemetry_interface.py   # Abstract interface ✅
-│   │   ├── telemetry_mock.py        # macOS: mock data ✅
-│   │   └── telemetry_real.py        # Windows: real data (TODO)
-│   ├── process_monitor.py           # Process auto-detection ✅
-│   ├── session_manager.py           # Session & lap tracking ✅
-│   ├── telemetry_loop.py            # Main polling loop ✅
-│   ├── csv_formatter.py             # CSV formatting ✅
-│   └── file_manager.py              # File operations ✅
-├── tests/
-│   ├── test_telemetry_mock.py       # 7 tests ✅
-│   ├── test_process_monitor.py      # 5 tests ✅
-│   ├── test_session_manager.py      # 7 tests ✅
-│   ├── test_telemetry_loop.py       # 13 tests ✅
-│   ├── test_csv_formatter.py        # 13 tests ✅
-│   └── test_file_manager.py         # 16 tests ✅
-├── requirements.txt
-└── example.csv                       # MVP 12-channel reference output
-```
-
-## Documentation
-
-- **[TELEMETRY_LOGGER_PLAN.md](TELEMETRY_LOGGER_PLAN.md)** - High-level plan and architecture
-- **[TECHNICAL_SPEC.md](TECHNICAL_SPEC.md)** - Detailed implementation guide
-- **[GITHUB_ISSUES.md](GITHUB_ISSUES.md)** - Task breakdown
-- **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - How to use the docs
-
-## Testing
-
-```bash
-# Run all tests
-pytest -v
-
-# Run with coverage
-pytest --cov=src --cov-report=html
-
-# Run specific test file
-pytest tests/test_telemetry_mock.py -v
-```
-
-Current test coverage: **100%** of implemented modules
-
-## Timeline
-
-- **Days 1-4**: macOS development (mock telemetry) ← **Currently here**
-- **Days 5-6**: Windows testing and `.exe` build
-
-## License
-
-TBD
+![Status](https://img.shields.io/badge/status-planning-yellow)
+![Phase](https://img.shields.io/badge/phase-ready--for--dev-blue)
+![Tests](https://img.shields.io/badge/tests-0%2F60-red)
+![Coverage](https://img.shields.io/badge/coverage-0%25-red)
 
 ---
 
-**Version**: 1.0.0-dev
-**Last Updated**: 2025-01-17
+## 🏁 Overview
+
+During endurance races, drivers change car settings (tire pressures, fuel strategy, wing angles), but the team cannot see these in real-time. When the team wants to confirm a setting, they must ask the driver, which is distracting.
+
+**Solution:** The 1Lap Dashboard Server receives telemetry from a monitor app (running on the driver's PC with LMU) and broadcasts it to web dashboards accessible by the entire team via secret URLs.
+
+---
+
+## ✨ Features
+
+- 🔴 **Real-time telemetry** - Fuel, tires, brakes, engine temps (2Hz updates)
+- 🔧 **Car setup display** - View complete mechanical setup from REST API
+- 📱 **Mobile friendly** - Works on phone, tablet, laptop (responsive design)
+- 🔗 **Secret URLs** - Share dashboard via unique session link
+- 🌐 **Multi-viewer** - Multiple team members view same session simultaneously
+- 🔄 **Auto-reconnect** - Resilient to connection drops
+- 🚀 **Easy deployment** - Local network or cloud (Heroku/Railway)
+
+---
+
+## 🎯 Status: Planning Phase
+
+**Current Status:** Feature specifications complete, ready for implementation
+
+| Phase | Status | Progress |
+|-------|--------|----------|
+| Planning | ✅ Complete | 100% |
+| Phase 1: MVP | 🔴 Not Started | 0% |
+| Phase 2: Polish | 🔴 Not Started | 0% |
+
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed progress tracking.
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    LMU (Windows)                        │
+│  ┌──────────────┐          ┌─────────────────┐         │
+│  │ Shared Mem   │          │   REST API      │         │
+│  │ (Telemetry)  │          │ (localhost:6397)│         │
+│  └──────┬───────┘          └────────┬────────┘         │
+└─────────┼──────────────────────────┼──────────────────┘
+          │                          │
+          └──────────┬───────────────┘
+                     ▼
+          ┌──────────────────────┐
+          │   monitor (Python)   │  ← Separate repo
+          │   - Reads data       │
+          │   - Publishes 2Hz    │
+          └──────────┬───────────┘
+                     │ WebSocket
+                     ▼
+          ┌──────────────────────┐
+          │   server (Flask)     │  ← THIS REPO
+          │   - Session mgmt     │
+          │   - Broadcast        │
+          │   - Serve UI         │
+          └──────────┬───────────┘
+                     │ WebSocket
+                     ▼
+          ┌──────────────────────┐
+          │   Web Browser        │
+          │   - Dashboard UI     │
+          │   - Auto-update      │
+          └──────────────────────┘
+```
+
+---
+
+## 🚀 Quick Start
+
+**Note:** This repo is in planning phase. No code is implemented yet. See `bugs/` directory for feature specifications.
+
+### Installation (Future)
+
+```bash
+# Clone repository
+git clone https://github.com/1Lap/dashboard.git
+cd dashboard
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start server
+python run.py
+```
+
+### Usage (Future)
+
+1. Start dashboard server: `python run.py`
+2. Run monitor (on Windows with LMU): `python monitor.py`
+3. Monitor displays dashboard URL:
+   ```
+   📱 DASHBOARD URL:
+      http://192.168.1.100:5000/dashboard/abc-def-ghi
+   ```
+4. Share URL with team
+5. Team opens URL in browser → real-time telemetry!
+
+---
+
+## 📂 Repository Structure
+
+```
+dashboard/
+├── bugs/                    # Feature specifications (9 detailed specs)
+│   ├── README.md           # Feature index & implementation roadmap
+│   ├── session_management.md
+│   ├── flask_app_structure.md
+│   ├── websocket_server.md
+│   ├── dashboard_ui_frontend.md
+│   └── ...
+├── app/                     # Flask application (not implemented yet)
+├── static/                  # CSS, JS, images (not implemented yet)
+├── templates/               # HTML templates (not implemented yet)
+├── tests/                   # Test suite (not implemented yet)
+├── RACE_DASHBOARD_PLAN.md  # Complete implementation plan (1750 lines)
+├── PROJECT_STATUS.md        # Implementation progress tracker
+├── README.md                # This file
+└── _archive/                # Archived writer project code (reference)
+```
+
+---
+
+## 📋 Implementation Plan
+
+### Week 1: Core Backend
+1. **Session Management** - UUID generation, data storage
+2. **Flask App Structure** - App factory, routes, configuration
+3. **WebSocket Server** - Real-time communication layer
+4. **Testing Infrastructure** - pytest setup, fixtures, mocks
+
+### Week 2: Frontend & Polish
+5. **Dashboard UI** - HTML/CSS/JS interface with real-time updates
+6. **Secret URLs** - Session URL handling (included in #1)
+7. **Error Handling** - Auto-reconnect, graceful degradation
+
+### Week 3: Deployment
+8. **Deployment Config** - Gunicorn, Docker, cloud guides
+9. **Documentation** - README, installation, usage, API reference
+
+See [bugs/README.md](bugs/README.md) for detailed feature specifications.
+
+---
+
+## 🧪 Testing Strategy
+
+**Target:** 80%+ code coverage
+
+### Test Categories
+- **Unit Tests** - 32 specified (SessionManager, routes, WebSocket)
+- **Integration Tests** - E2E flow, multi-client, reconnection
+- **Manual Tests** - Mobile devices, browsers, long sessions
+
+See [bugs/testing_infrastructure.md](bugs/testing_infrastructure.md) for details.
+
+---
+
+## 🛠️ Technology Stack
+
+**Backend:**
+- Python 3.11+
+- Flask 2.3+ (web framework)
+- Flask-SocketIO 5.3+ (WebSocket support)
+- eventlet (async mode)
+- gunicorn (production)
+
+**Frontend:**
+- HTML5 + CSS3
+- Vanilla JavaScript (no framework)
+- Socket.IO client (CDN)
+
+**Testing:**
+- pytest 7.4+
+- pytest-cov (coverage)
+- pytest-flask (Flask testing)
+
+---
+
+## 📡 API Overview
+
+### WebSocket Events
+
+**Monitor → Server:**
+- `request_session_id` - Get unique session ID
+- `setup_data` - Send car setup (once per session)
+- `telemetry_update` - Send telemetry (2Hz)
+
+**Server → Dashboard:**
+- `setup_update` - Broadcast setup to viewers
+- `telemetry_update` - Broadcast telemetry (2Hz)
+
+**Dashboard → Server:**
+- `join_session` - Join session room to receive updates
+
+See [RACE_DASHBOARD_PLAN.md](RACE_DASHBOARD_PLAN.md) lines 1244-1378 for complete API specification.
+
+---
+
+## 🚢 Deployment Options
+
+### Local Network (Recommended for Testing)
+```bash
+# Run on driver's PC
+python run.py
+
+# Team connects via LAN
+http://192.168.1.100:5000/dashboard/<session-id>
+```
+
+**Pros:** No cloud costs, low latency, no internet required
+**Cons:** Requires LAN access
+
+### Cloud Hosting (Recommended for Remote Teams)
+```bash
+# Deploy to Heroku/Railway/Render
+git push heroku main
+
+# Access from anywhere
+https://dashboard.1lap.io/<session-id>
+```
+
+**Pros:** Accessible from anywhere, no firewall issues
+**Cons:** Requires internet, slight latency increase
+
+See [bugs/deployment_configuration.md](bugs/deployment_configuration.md) for detailed guides.
+
+---
+
+## 📚 Documentation
+
+### For Developers
+- [PROJECT_STATUS.md](PROJECT_STATUS.md) - Implementation progress
+- [bugs/README.md](bugs/README.md) - Feature specifications index
+- [RACE_DASHBOARD_PLAN.md](RACE_DASHBOARD_PLAN.md) - Complete plan
+- [.claude/CLAUDE.md](.claude/CLAUDE.md) - Development guidelines
+
+### For Users (Future)
+- Installation guide - Not yet written
+- Usage guide - Not yet written
+- Troubleshooting - Not yet written
+- API reference - Not yet written
+
+---
+
+## 🤝 Contributing
+
+This project follows **Test-Driven Development (TDD)**:
+
+1. Read feature spec in `bugs/` directory
+2. Write failing tests first
+3. Implement feature to make tests pass
+4. Update `PROJECT_STATUS.md` with progress
+5. Commit with clear message
+
+See [.claude/CLAUDE.md](.claude/CLAUDE.md) for detailed development guidelines.
+
+---
+
+## 🔗 Related Projects
+
+| Project | Purpose | Status |
+|---------|---------|--------|
+| **dashboard** (this repo) | Web server for real-time telemetry display | Planning |
+| **monitor** | Data collector (publishes to dashboard) | Planned |
+| **writer** | CSV telemetry logger | Complete (archived in `_archive/`) |
+
+---
+
+## 📊 Current Progress
+
+**Last Updated:** 2025-11-22
+
+| Metric | Value |
+|--------|-------|
+| Features Specified | 9/9 (100%) |
+| Features Implemented | 0/9 (0%) |
+| Tests Written | 0/60+ (0%) |
+| Code Coverage | 0% |
+| Documentation | Planning docs only |
+
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed tracking.
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE)
+
+---
+
+## 🙋 Support
+
+- **Issues:** [GitHub Issues](https://github.com/1Lap/dashboard/issues)
+- **Documentation:** See `bugs/` directory for specs
+- **Reference:** LMU REST API schema in `swagger-schema.json`
+
+---
+
+## 🎯 Next Steps
+
+1. ✅ Feature specifications complete (9 files in `bugs/`)
+2. 🔜 Update `requirements.txt` with Flask dependencies
+3. 🔜 Create directory structure (`app/`, `static/`, `templates/`, `tests/`)
+4. 🔜 Implement SessionManager (Week 1)
+5. 🔜 Build Flask app with WebSocket support (Week 1)
+6. 🔜 Create dashboard UI (Week 2)
+7. 🔜 Deploy to local network (Week 3)
+
+**Ready to start implementation!** 🚀
+
+See [bugs/README.md](bugs/README.md) for detailed implementation roadmap.
+
+---
+
+Built with ❤️ for endurance racing teams
