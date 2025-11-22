@@ -75,59 +75,56 @@ class TestEndToEndFlow:
             - Timestamps are present and valid
             - All WebSocket events fire correctly
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
 
-        # TODO: Uncomment when Flask-SocketIO is implemented
-        # from app import socketio
-        #
-        # # Simulate monitor client
-        # monitor = socketio.test_client(app)
-        # assert monitor.is_connected()
-        #
-        # # 1. Monitor requests session ID
-        # monitor.emit('request_session_id', {})
-        # response = monitor.get_received()
-        # assert len(response) == 1
-        # assert response[0]['name'] == 'session_id_assigned'
-        # session_id = response[0]['args'][0]['session_id']
-        # assert len(session_id) == 36  # UUID4 format
-        #
-        # # 2. Simulate dashboard client
-        # dashboard = socketio.test_client(app)
-        # assert dashboard.is_connected()
-        #
-        # # 3. Dashboard joins session
-        # dashboard.emit('join_session', {'session_id': session_id})
-        # dashboard.get_received()  # Clear any initial messages
-        #
-        # # 4. Monitor sends setup data
-        # monitor.emit('setup_data', {
-        #     'session_id': session_id,
-        #     'timestamp': '2025-11-22T14:30:00.000Z',
-        #     'setup': sample_setup_data
-        # })
-        #
-        # # 5. Dashboard receives setup update
-        # setup_messages = dashboard.get_received()
-        # assert len(setup_messages) == 1
-        # assert setup_messages[0]['name'] == 'setup_update'
-        # assert setup_messages[0]['args'][0]['setup'] == sample_setup_data
-        #
-        # # 6. Monitor sends telemetry
-        # monitor.emit('telemetry_update', {
-        #     'session_id': session_id,
-        #     'telemetry': sample_telemetry_data
-        # })
-        #
-        # # 7. Dashboard receives telemetry update
-        # telem_messages = dashboard.get_received()
-        # assert len(telem_messages) == 1
-        # assert telem_messages[0]['name'] == 'telemetry_update'
-        # assert telem_messages[0]['args'][0]['telemetry']['lap'] == sample_telemetry_data['lap']
+        # Simulate monitor client
+        monitor = socketio.test_client(app)
+        assert monitor.is_connected()
 
-    def test_dashboard_joins_after_setup_sent(self, app):
+        # 1. Monitor requests session ID
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        assert len(response) == 1
+        assert response[0]['name'] == 'session_id_assigned'
+        session_id = response[0]['args'][0]['session_id']
+        assert len(session_id) == 36  # UUID4 format
+
+        # 2. Simulate dashboard client
+        dashboard = socketio.test_client(app)
+        assert dashboard.is_connected()
+
+        # 3. Dashboard joins session
+        dashboard.emit('join_session', {'session_id': session_id})
+        dashboard.get_received()  # Clear any initial messages
+
+        # 4. Monitor sends setup data
+        monitor.emit('setup_data', {
+            'session_id': session_id,
+            'timestamp': '2025-11-22T14:30:00.000Z',
+            'setup': sample_setup_data
+        })
+
+        # 5. Dashboard receives setup update
+        setup_messages = dashboard.get_received()
+        assert len(setup_messages) == 1
+        assert setup_messages[0]['name'] == 'setup_update'
+        assert setup_messages[0]['args'][0]['setup'] == sample_setup_data
+
+        # 6. Monitor sends telemetry
+        monitor.emit('telemetry_update', {
+            'session_id': session_id,
+            'telemetry': sample_telemetry_data
+        })
+
+        # 7. Dashboard receives telemetry update
+        telem_messages = dashboard.get_received()
+        assert len(telem_messages) == 1
+        assert telem_messages[0]['name'] == 'telemetry_update'
+        assert telem_messages[0]['args'][0]['telemetry']['lap'] == sample_telemetry_data['lap']
+
+    def test_dashboard_joins_after_setup_sent(self, app, sample_setup_data):
         """
         Test dashboard joining after setup is already sent.
 
@@ -142,14 +139,32 @@ class TestEndToEndFlow:
             - Setup is cached in session
             - No data loss for late-joining dashboards
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
 
-        # TODO: Implement when ready
-        # - Monitor sends setup
-        # - Dashboard joins session
-        # - Verify dashboard receives setup on join
+        # Monitor connects and gets session ID
+        monitor = socketio.test_client(app)
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        session_id = response[0]['args'][0]['session_id']
+
+        # Monitor sends setup
+        monitor.emit('setup_data', {
+            'session_id': session_id,
+            'timestamp': '2025-11-22T14:30:00.000Z',
+            'setup': sample_setup_data
+        })
+
+        # Dashboard joins session AFTER setup sent
+        dashboard = socketio.test_client(app)
+        dashboard.emit('join_session', {'session_id': session_id})
+
+        # Verify dashboard receives setup on join
+        received = dashboard.get_received()
+        setup_msgs = [msg for msg in received if msg['name'] == 'setup_update']
+        assert len(setup_msgs) == 1
+        assert setup_msgs[0]['args'][0]['setup'] == sample_setup_data
 
     def test_multiple_telemetry_updates(self, app):
         """
@@ -167,14 +182,39 @@ class TestEndToEndFlow:
             - Order is preserved
             - Timestamps progress correctly
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
+        from tests.test_data import generate_fuel_series
 
-        # TODO: Implement when ready
-        # - Use generate_fuel_series() for realistic lap progression
-        # - Send 10 updates
-        # - Verify all received in order
+        # Setup monitor and dashboard
+        monitor = socketio.test_client(app)
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        session_id = response[0]['args'][0]['session_id']
+
+        dashboard = socketio.test_client(app)
+        dashboard.emit('join_session', {'session_id': session_id})
+        dashboard.get_received()  # Clear initial messages
+
+        # Use generate_fuel_series() for realistic lap progression
+        fuel_series = generate_fuel_series(start_fuel=80.0, fuel_per_lap=2.5, num_laps=10)
+
+        # Send 10 telemetry updates
+        for telemetry in fuel_series:
+            monitor.emit('telemetry_update', {
+                'session_id': session_id,
+                'telemetry': telemetry
+            })
+
+        # Verify all received in order
+        received = dashboard.get_received()
+        telemetry_msgs = [msg for msg in received if msg['name'] == 'telemetry_update']
+        assert len(telemetry_msgs) == 10
+
+        # Verify lap progression
+        for i, msg in enumerate(telemetry_msgs):
+            assert msg['args'][0]['telemetry']['lap'] == i + 1
 
 
 @pytest.mark.integration
@@ -186,7 +226,7 @@ class TestMultiDashboard:
     clients are connected to the same session.
     """
 
-    def test_multiple_dashboards_receive_telemetry(self, app):
+    def test_multiple_dashboards_receive_telemetry(self, app, sample_telemetry_data):
         """
         Test broadcasting telemetry to multiple dashboards.
 
@@ -201,15 +241,36 @@ class TestMultiDashboard:
             - No cross-contamination between sessions
             - All clients get identical data
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
 
-        # TODO: Implement when ready
-        # - Create 3 dashboard clients
-        # - All join same session
-        # - Monitor sends update
-        # - Verify all 3 receive same data
+        # Monitor connects and gets session ID
+        monitor = socketio.test_client(app)
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        session_id = response[0]['args'][0]['session_id']
+
+        # Create 3 dashboard clients
+        dashboards = []
+        for _ in range(3):
+            dashboard = socketio.test_client(app)
+            dashboard.emit('join_session', {'session_id': session_id})
+            dashboard.get_received()  # Clear initial messages
+            dashboards.append(dashboard)
+
+        # Monitor sends update
+        monitor.emit('telemetry_update', {
+            'session_id': session_id,
+            'telemetry': sample_telemetry_data
+        })
+
+        # Verify all 3 receive same data
+        for dashboard in dashboards:
+            received = dashboard.get_received()
+            telemetry_msgs = [msg for msg in received if msg['name'] == 'telemetry_update']
+            assert len(telemetry_msgs) == 1
+            assert telemetry_msgs[0]['args'][0]['telemetry']['lap'] == sample_telemetry_data['lap']
 
     def test_dashboards_in_different_sessions(self, app):
         """
@@ -227,14 +288,55 @@ class TestMultiDashboard:
             - Room-based broadcasting works correctly
             - Multiple concurrent sessions supported
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
+        from tests.test_data import generate_telemetry
 
-        # TODO: Implement when ready
-        # - Use generate_multi_session() for test data
-        # - Create 2 monitor clients, 2 dashboard clients
-        # - Verify isolation
+        # Create two separate sessions with monitors
+        monitor1 = socketio.test_client(app)
+        monitor1.emit('request_session_id', {})
+        response1 = monitor1.get_received()
+        session_id_1 = response1[0]['args'][0]['session_id']
+
+        monitor2 = socketio.test_client(app)
+        monitor2.emit('request_session_id', {})
+        response2 = monitor2.get_received()
+        session_id_2 = response2[0]['args'][0]['session_id']
+
+        # Dashboard A joins session 1
+        dashboard_a = socketio.test_client(app)
+        dashboard_a.emit('join_session', {'session_id': session_id_1})
+        dashboard_a.get_received()
+
+        # Dashboard B joins session 2
+        dashboard_b = socketio.test_client(app)
+        dashboard_b.emit('join_session', {'session_id': session_id_2})
+        dashboard_b.get_received()
+
+        # Both monitors send telemetry
+        telemetry_1 = generate_telemetry(lap=10, fuel=50.0)
+        monitor1.emit('telemetry_update', {
+            'session_id': session_id_1,
+            'telemetry': telemetry_1
+        })
+
+        telemetry_2 = generate_telemetry(lap=5, fuel=70.0)
+        monitor2.emit('telemetry_update', {
+            'session_id': session_id_2,
+            'telemetry': telemetry_2
+        })
+
+        # Verify each dashboard only sees its session's data
+        received_a = dashboard_a.get_received()
+        telemetry_msgs_a = [msg for msg in received_a if msg['name'] == 'telemetry_update']
+        assert len(telemetry_msgs_a) == 1
+        assert telemetry_msgs_a[0]['args'][0]['telemetry']['lap'] == 10
+
+        received_b = dashboard_b.get_received()
+        telemetry_msgs_b = [msg for msg in received_b if msg['name'] == 'telemetry_update']
+        assert len(telemetry_msgs_b) == 1
+        assert telemetry_msgs_b[0]['args'][0]['telemetry']['lap'] == 5
 
     @pytest.mark.slow
     def test_many_concurrent_dashboards(self, app):
@@ -273,7 +375,7 @@ class TestSessionLifecycle:
     their lifecycle.
     """
 
-    def test_session_creation_and_cleanup(self, app, session_manager):
+    def test_session_creation_and_cleanup(self, app):
         """
         Test complete session lifecycle.
 
@@ -289,16 +391,27 @@ class TestSessionLifecycle:
             - Sessions can be deleted
             - Cleanup doesn't affect other sessions
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
+        from app.main import session_manager
 
-        # TODO: Implement when ready
-        # - Create session via WebSocket
-        # - Verify in SessionManager
-        # - Test deletion
+        # Monitor requests session ID
+        monitor = socketio.test_client(app)
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        session_id = response[0]['args'][0]['session_id']
 
-    def test_session_data_persistence(self, app, session_manager):
+        # Verify session created in SessionManager
+        session = session_manager.get_session(session_id)
+        assert session is not None
+        assert session['session_id'] == session_id
+
+        # Verify session can be deleted
+        session_manager.delete_session(session_id)
+        assert session_manager.get_session(session_id) is None
+
+    def test_session_data_persistence(self, app, sample_setup_data, sample_telemetry_data):
         """
         Test that session data persists across reconnections.
 
@@ -314,15 +427,48 @@ class TestSessionLifecycle:
             - New clients can access historical data
             - Setup is cached and delivered on join
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
 
-        # TODO: Implement when ready
-        # - Send data with client 1
-        # - Disconnect client 1
-        # - Connect client 2
-        # - Verify client 2 gets cached data
+        # Monitor connects and sends setup + telemetry
+        monitor = socketio.test_client(app)
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        session_id = response[0]['args'][0]['session_id']
+
+        monitor.emit('setup_data', {
+            'session_id': session_id,
+            'timestamp': '2025-11-22T14:30:00.000Z',
+            'setup': sample_setup_data
+        })
+
+        monitor.emit('telemetry_update', {
+            'session_id': session_id,
+            'telemetry': sample_telemetry_data
+        })
+
+        # Dashboard 1 connects and receives data
+        dashboard1 = socketio.test_client(app)
+        dashboard1.emit('join_session', {'session_id': session_id})
+        received1 = dashboard1.get_received()
+        assert len(received1) >= 2  # Should get setup + telemetry
+
+        # Dashboard 1 disconnects
+        dashboard1.disconnect()
+
+        # New dashboard connects to same session
+        dashboard2 = socketio.test_client(app)
+        dashboard2.emit('join_session', {'session_id': session_id})
+
+        # Verify new dashboard gets existing data
+        received2 = dashboard2.get_received()
+        setup_msgs = [msg for msg in received2 if msg['name'] == 'setup_update']
+        telemetry_msgs = [msg for msg in received2 if msg['name'] == 'telemetry_update']
+        assert len(setup_msgs) == 1
+        assert len(telemetry_msgs) == 1
+        assert setup_msgs[0]['args'][0]['setup'] == sample_setup_data
+        assert telemetry_msgs[0]['args'][0]['telemetry']['lap'] == sample_telemetry_data['lap']
 
 
 @pytest.mark.integration
@@ -347,21 +493,29 @@ class TestErrorScenarios:
             - Error messages are clear
             - System doesn't crash
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
+        import uuid
 
-        # TODO: Implement when ready
-        # - Try to join 'invalid-session-id'
-        # - Verify error response
+        # Dashboard connects
+        dashboard = socketio.test_client(app)
+        assert dashboard.is_connected()
 
-    def test_telemetry_without_session(self, app):
+        # Try to join non-existent session
+        fake_session_id = str(uuid.uuid4())
+        dashboard.emit('join_session', {'session_id': fake_session_id})
+
+        # System doesn't crash - dashboard remains connected
+        assert dashboard.is_connected()
+
+    def test_telemetry_without_session(self, app, sample_telemetry_data):
         """
         Test monitor sending telemetry without requesting session first.
 
         Flow:
             1. Monitor connects
-            2. Monitor sends telemetry WITHOUT session ID
+            2. Monitor sends telemetry WITHOUT valid session ID
             3. Verify appropriate error handling
 
         Verifies:
@@ -369,13 +523,24 @@ class TestErrorScenarios:
             - System doesn't crash
             - Error messages guide correct usage
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
+        import uuid
 
-        # TODO: Implement when ready
-        # - Send telemetry with invalid/missing session_id
-        # - Verify error handling
+        # Monitor connects
+        monitor = socketio.test_client(app)
+        assert monitor.is_connected()
+
+        # Send telemetry with invalid/missing session_id
+        fake_session_id = str(uuid.uuid4())
+        monitor.emit('telemetry_update', {
+            'session_id': fake_session_id,
+            'telemetry': sample_telemetry_data
+        })
+
+        # System doesn't crash - monitor remains connected
+        assert monitor.is_connected()
 
     def test_malformed_telemetry_data(self, app):
         """
@@ -391,14 +556,29 @@ class TestErrorScenarios:
             - Malformed data doesn't crash server
             - Dashboard doesn't receive bad data
 
-        Status: SKELETON - Will implement when Flask-SocketIO is ready
+        Status: ACTIVE - Flask-SocketIO is implemented
         """
-        pytest.skip("Flask-SocketIO not yet implemented - skeleton test")
+        from app import socketio
 
-        # TODO: Implement when ready
-        # - Send telemetry with missing fields
-        # - Send telemetry with wrong types
-        # - Verify validation/error handling
+        # Setup normal monitor and dashboard
+        monitor = socketio.test_client(app)
+        monitor.emit('request_session_id', {})
+        response = monitor.get_received()
+        session_id = response[0]['args'][0]['session_id']
+
+        dashboard = socketio.test_client(app)
+        dashboard.emit('join_session', {'session_id': session_id})
+        dashboard.get_received()  # Clear initial messages
+
+        # Send telemetry with missing fields
+        monitor.emit('telemetry_update', {
+            'session_id': session_id,
+            'telemetry': {}  # Empty/malformed telemetry
+        })
+
+        # System doesn't crash - both clients remain connected
+        assert monitor.is_connected()
+        assert dashboard.is_connected()
 
 
 @pytest.mark.integration

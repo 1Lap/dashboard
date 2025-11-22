@@ -43,20 +43,18 @@ def app():
     Returns:
         Flask: Application instance with TESTING=True
 
-    Status: SKELETON - Will be implemented when Flask app is created
+    Status: ACTIVE - Flask app is implemented
     Usage:
         def test_route(app):
             with app.app_context():
                 # Test something
                 pass
     """
-    # TODO: Uncomment when app/__init__.py create_app() is implemented
-    # from app import create_app
-    # app = create_app()
-    # app.config['TESTING'] = True
-    # app.config['SECRET_KEY'] = 'test-secret-key'
-    # return app
-    pytest.skip("Flask app not yet implemented - placeholder fixture")
+    from app import create_app
+    app = create_app()
+    app.config['TESTING'] = True
+    app.config['SECRET_KEY'] = 'test-secret-key'
+    return app
 
 
 @pytest.fixture
@@ -70,15 +68,13 @@ def client(app):
     Returns:
         FlaskClient: Test client for HTTP requests
 
-    Status: SKELETON - Depends on app fixture
+    Status: ACTIVE - Flask app is implemented
     Usage:
         def test_homepage(client):
             response = client.get('/')
             assert response.status_code == 200
     """
-    # TODO: Uncomment when Flask app is implemented
-    # return app.test_client()
-    pytest.skip("Flask test client not yet implemented - placeholder fixture")
+    return app.test_client()
 
 
 @pytest.fixture
@@ -92,17 +88,15 @@ def socketio_client(app):
     Returns:
         SocketIOTestClient: Test client for WebSocket events
 
-    Status: SKELETON - Depends on app fixture and Flask-SocketIO
+    Status: ACTIVE - Flask-SocketIO is implemented
     Usage:
         def test_websocket_connect(socketio_client):
             assert socketio_client.is_connected()
             socketio_client.emit('test_event', {'data': 'test'})
             received = socketio_client.get_received()
     """
-    # TODO: Uncomment when Flask-SocketIO is implemented
-    # from app import socketio
-    # return socketio.test_client(app)
-    pytest.skip("SocketIO test client not yet implemented - placeholder fixture")
+    from app import socketio
+    return socketio.test_client(app)
 
 
 # ==============================================================================

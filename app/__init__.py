@@ -42,9 +42,10 @@ def create_app():
     # In production, this should be restricted to specific domains
     socketio.init_app(app, cors_allowed_origins="*")
 
-    # Import and register routes (must be after socketio.init_app)
+    # Import and register routes and WebSocket handlers (must be after socketio.init_app)
     # This import is inside the function to avoid circular imports
-    from app.main import register_routes
+    from app.main import register_routes, register_socketio_handlers
     register_routes(app)
+    register_socketio_handlers(socketio)
 
     return app
