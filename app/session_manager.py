@@ -7,7 +7,7 @@ Handles creation of unique session IDs, storage of session data
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 class SessionManager:
@@ -107,3 +107,52 @@ class SessionManager:
             List of session ID strings (UUIDs)
         """
         return list(self._sessions.keys())
+
+    @staticmethod
+    def validate_session_id(session_id: str) -> Tuple[bool, Optional[str]]:
+        """
+        Validate that a session ID is a properly formatted UUID.
+
+        Args:
+            session_id: The session ID string to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+            - (True, None) if valid
+            - (False, error_message) if invalid
+        """
+        if not session_id:
+            return False, "Session ID cannot be empty"
+
+        if not isinstance(session_id, str):
+            return False, "Session ID must be a string"
+
+        try:
+            parsed_uuid = uuid.UUID(session_id)
+            # Verify it's the same when converted back to string
+            if str(parsed_uuid) != session_id:
+                return False, "Session ID format is not normalized"
+            return True, None
+        except (ValueError, AttributeError, TypeError) as e:
+            return False, f"Invalid UUID format: {str(e)}"
+
+    @staticmethod
+    def construct_dashboard_url(session_id: str, host: str = 'localhost',
+                               port: int = 5000, protocol: str = 'http') -> str:
+        """
+        Construct a dashboard URL for a given session.
+
+        Args:
+            session_id: The UUID of the session
+            host: Server hostname or IP address (default: 'localhost')
+            port: Server port (default: 5000)
+            protocol: URL protocol (default: 'http')
+
+        Returns:
+            Complete dashboard URL string
+
+        Example:
+            >>> construct_dashboard_url('abc-123', '192.168.1.100', 5000)
+            'http://192.168.1.100:5000/dashboard/abc-123'
+        """
+        return f'{protocol}://{host}:{port}/dashboard/{session_id}'

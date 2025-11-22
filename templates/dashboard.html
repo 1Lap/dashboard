@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1Lap Race Dashboard - Session {{ session_id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff00;
+        }
+        .session-info {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+        .status.connected {
+            background-color: #00ff00;
+            color: #000000;
+        }
+        .status.disconnected {
+            background-color: #ff0000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>1Lap Race Dashboard</h1>
+
+        <div class="session-info">
+            <strong>Session ID:</strong> {{ session_id }}
+            <span class="status disconnected" id="connection-status">Disconnected</span>
+        </div>
+
+        <div id="telemetry-display">
+            <p>Waiting for telemetry data...</p>
+        </div>
+    </div>
+
+    <!-- Socket.IO client will be added in the Dashboard UI feature -->
+    <!-- For now, this is a basic template to pass tests -->
+</body>
+</html>
