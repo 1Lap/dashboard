@@ -44,6 +44,7 @@ def generate_telemetry(
     player_name: str = "Test Driver",
     car_name: str = "Test Car",
     track_name: str = "Test Track",
+    session_type: str = "race",
     **overrides: Any
 ) -> Dict[str, Any]:
     """
@@ -57,6 +58,7 @@ def generate_telemetry(
         player_name: Driver name (default: "Test Driver")
         car_name: Car/vehicle name (default: "Test Car")
         track_name: Track/circuit name (default: "Test Track")
+        session_type: Session type (e.g., "practice", "qualifying", "race")
         **overrides: Any additional fields to override
 
     Returns:
@@ -110,6 +112,7 @@ def generate_telemetry(
         'player_name': player_name,
         'car_name': car_name,
         'track_name': track_name,
+        'session_type': session_type,
         'speed': 180.5,  # km/h
         'rpm': 7500,
         'gear': 4,
