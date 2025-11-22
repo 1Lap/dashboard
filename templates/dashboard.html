@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1Lap Race Dashboard - {{ session_id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏁 1Lap Race Dashboard</h1>
+            <p class="session-id">Session: {{ session_id }}</p>
+            <p id="connection-status" class="status disconnected">⚪ Disconnected</p>
+        </header>
+
+        <!-- Session Info -->
+        <section class="card">
+            <h2>📊 Session Info</h2>
+            <div class="grid-2">
+                <div>
+                    <span class="label">Driver:</span>
+                    <span id="player-name">-</span>
+                </div>
+                <div>
+                    <span class="label">Car:</span>
+                    <span id="car-name">-</span>
+                </div>
+                <div>
+                    <span class="label">Track:</span>
+                    <span id="track-name">-</span>
+                </div>
+                <div>
+                    <span class="label">Session:</span>
+                    <span id="session-type">-</span>
+                </div>
+                <div>
+                    <span class="label">Position:</span>
+                    <span id="position" class="big-value">-</span>
+                </div>
+                <div>
+                    <span class="label">Lap:</span>
+                    <span id="lap" class="big-value">-</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Telemetry -->
+        <section class="card">
+            <h2>🔴 Live Telemetry</h2>
+
+            <div class="telemetry-group">
+                <h3>⛽ Fuel</h3>
+                <div class="progress-bar">
+                    <div id="fuel-bar" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <p><span id="fuel">0.0</span>L / <span id="fuel-capacity">90.0</span>L (<span id="fuel-percent">0</span>%)</p>
+                <p class="hint">Est. laps remaining: <span id="fuel-laps">-</span></p>
+            </div>
+
+            <div class="telemetry-group">
+                <h3>🔥 Tire Temperatures</h3>
+                <div class="tire-grid">
+                    <div class="tire">
+                        <span class="label">FL</span>
+                        <span id="tire-temp-fl" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">FR</span>
+                        <span id="tire-temp-fr" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">RL</span>
+                        <span id="tire-temp-rl" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">RR</span>
+                        <span id="tire-temp-rr" class="value">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="telemetry-group">
+                <h3>💨 Tire Pressures</h3>
+                <div class="tire-grid">
+                    <div class="tire">
+                        <span class="label">FL</span>
+                        <span id="tire-psi-fl" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">FR</span>
+                        <span id="tire-psi-fr" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">RL</span>
+                        <span id="tire-psi-rl" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">RR</span>
+                        <span id="tire-psi-rr" class="value">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="telemetry-group">
+                <h3>🔴 Brake Temperatures</h3>
+                <div class="tire-grid">
+                    <div class="tire">
+                        <span class="label">FL</span>
+                        <span id="brake-temp-fl" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">FR</span>
+                        <span id="brake-temp-fr" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">RL</span>
+                        <span id="brake-temp-rl" class="value">-</span>
+                    </div>
+                    <div class="tire">
+                        <span class="label">RR</span>
+                        <span id="brake-temp-rr" class="value">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="telemetry-group">
+                <h3>🌡️ Engine</h3>
+                <p>Water: <span id="engine-temp">-</span>°C</p>
+            </div>
+
+            <div class="telemetry-group">
+                <h3>🌤️ Weather</h3>
+                <p>Track: <span id="track-temp">-</span>°C | Ambient: <span id="ambient-temp">-</span>°C</p>
+            </div>
+        </section>
+
+        <!-- Car Setup -->
+        <section class="card">
+            <h2>🔧 Car Setup</h2>
+            <p class="hint">Setup captured at session start</p>
+            <div id="setup-container">
+                <p class="hint">Waiting for setup data...</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        // Initialize dashboard with session ID
+        const sessionId = "{{ session_id }}";
+        initDashboard(sessionId);
+    </script>
+</body>
+</html>
