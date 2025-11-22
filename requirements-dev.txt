@@ -1,6 +1,9 @@
-# Development and testing dependencies
+# 1Lap Dashboard Server - Development and Testing Dependencies
 
-pytest>=7.4.0              # Testing framework
-pytest-cov>=4.1.0          # Coverage reports
-black>=23.0.0              # Code formatting
-flake8>=6.0.0              # Linting
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-flask>=1.2.0
+pytest-mock>=3.11.0
+black>=23.0.0
+flake8>=6.0.0
+coverage>=7.3.0
